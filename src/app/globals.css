@@ -1,23 +1,27 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #f5f5f5;
-  --surface: #ffffff;
-  --text-primary: #171717;
-  --text-secondary: #525252;
-  --accent: #000000;
-  --border: #e5e5e5;
+  --background: oklch(0.97 0.008 90);
+  --text-primary: oklch(0.15 0 0);
+  --text-secondary: oklch(0.45 0 0);
+  --accent: oklch(0 0 0);
+  --border: oklch(0.92 0.005 90);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-surface: var(--surface);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-accent: var(--accent);
   --color-border: var(--border);
   --font-sans: 'Pretendard', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+html,
+body {
+  overflow: hidden;
+  height: 100%;
 }
 
 body {
@@ -28,11 +32,10 @@ body {
 
 ::selection {
   background: var(--accent);
-  color: var(--surface);
+  color: var(--background);
 }
 
-/* Scrollbar */
 main {
   scrollbar-width: thin;
-  scrollbar-color: #515151 #171717;
+  scrollbar-color: oklch(0.4 0 0) oklch(0.15 0 0);
 }

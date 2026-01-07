@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
-const SITE_URL = 'https://minsu.dev';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seominsu.dev';
 const SITE_NAME = '서민수 | Frontend Developer';
 const SITE_DESCRIPTION =
-  '프론트엔드 개발자 서민수입니다. React, Next.js, TypeScript를 활용한 웹 개발을 합니다.';
+  'React, Next.js, TypeScript 기반 프론트엔드 개발자 서민수입니다.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#f5f5f5',
+  themeColor: '#f5f5f2',
   width: 'device-width',
   initialScale: 1,
 };

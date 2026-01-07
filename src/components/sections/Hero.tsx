@@ -1,52 +1,25 @@
 'use client';
 
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion } from 'motion/react';
+import { HeroAscii } from '../ui/HeroAscii';
 
 export const Hero = () => {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start'],
-  });
-
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, -100]);
-
   return (
-    <section
-      ref={ref}
-      className="relative flex h-screen snap-start flex-col justify-between overflow-hidden"
-    >
-      <motion.div style={{ opacity, y }} className="flex h-full flex-col">
-        {/* Top Left - MINSU */}
+    <section className="relative h-screen overflow-hidden">
+      <motion.div className="relative z-10 flex h-full flex-col justify-between">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="self-start"
         >
           <h1
-            style={{ letterSpacing: '-0.11em' }}
-            className="-ml-[0.06em] -mt-[0.1em] font-mono text-[15vw] font-extrabold leading-none text-text-primary md:text-[12vw]"
+            style={{ letterSpacing: '-0.1em' }}
+            className="-ml-[0.06em] -mt-[0.1em] text-[32vw] font-extrabold leading-none text-text-primary md:text-[17vw]"
           >
             minsu
           </h1>
         </motion.div>
 
-        {/* Center - ASCII 3D Placeholder */}
-        <div className="flex flex-1 items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-            className="text-center font-mono text-xs text-text-secondary"
-          >
-            {/* ASCII 3D will be here */}
-          </motion.div>
-        </div>
-
-        {/* Bottom Right - SEO */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -54,13 +27,17 @@ export const Hero = () => {
           className="self-end"
         >
           <h1
-            style={{ letterSpacing: '-0.15em' }}
-            className="-mb-[0.15em] mr-8 font-mono text-[15vw] font-extrabold leading-none text-text-primary md:text-[12vw]"
+            style={{ letterSpacing: '-0.1em' }}
+            className="-mb-[0.14em] mr-3 text-[36vw]  font-extrabold leading-none text-text-primary md:text-[18vw]"
           >
             seo
           </h1>
         </motion.div>
       </motion.div>
+
+      <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+        <HeroAscii />
+      </div>
     </section>
   );
 };
