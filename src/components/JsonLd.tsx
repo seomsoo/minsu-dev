@@ -1,17 +1,17 @@
-import { PROFILE, PROJECTS } from '@/constants/data';
+import { AUTHOR, PROJECTS } from '@/content/resume';
 
-const SITE_URL = 'https://seominsu.dev';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seominsu.dev';
 
 export const JsonLd = () => {
   const personSchema = {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    name: PROFILE.name,
-    alternateName: PROFILE.nameEn,
+    name: AUTHOR.name,
+    alternateName: AUTHOR.nameEn,
     url: SITE_URL,
-    email: PROFILE.email,
-    jobTitle: PROFILE.position,
-    sameAs: [PROFILE.github],
+    email: AUTHOR.email,
+    jobTitle: AUTHOR.position,
+    sameAs: [AUTHOR.github],
     knowsAbout: [
       'React',
       'Next.js',
@@ -25,11 +25,11 @@ export const JsonLd = () => {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: `${PROFILE.name} 포트폴리오`,
+    name: `${AUTHOR.name} 포트폴리오`,
     url: SITE_URL,
     author: {
       '@type': 'Person',
-      name: PROFILE.name,
+      name: AUTHOR.name,
     },
   };
 
@@ -42,9 +42,9 @@ export const JsonLd = () => {
       item: {
         '@type': 'SoftwareSourceCode',
         name: project.name,
+        description: project.summary,
         url: project.link || project.github,
         codeRepository: project.github,
-        programmingLanguage: project.tags,
         dateCreated: project.date,
       },
     })),
