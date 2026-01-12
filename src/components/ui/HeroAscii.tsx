@@ -161,52 +161,50 @@ export const HeroAscii = () => {
 
     let targetX = 0;
     let targetY = 0;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     // 마우스 (데스크탑)
     const onMouseMove = (e: MouseEvent) => {
+      if (isMobile) return;
       targetX = (e.clientX / window.innerWidth - 0.5) * 2;
       targetY = (e.clientY / window.innerHeight - 0.5) * 2;
     };
     window.addEventListener('mousemove', onMouseMove);
 
-    // 자이로 (모바일)
-    let gyroEnabled = false;
-    const onDeviceOrientation = (e: DeviceOrientationEvent) => {
-      if (e.gamma === null || e.beta === null) return;
-      targetX = (e.gamma / 45) * 1;
-      targetY = ((e.beta - 45) / 45) * 1;
+    // 자이로 (모바일) - three-stdlib 패턴
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (event.gamma === null || event.beta === null) return;
+      targetX = (event.gamma / 45) * 1;
+      targetY = ((event.beta - 45) / 45) * 1;
     };
 
-    // 모바일 자이로 초기화
-    const initGyro = () => {
-      if (gyroEnabled) return;
-
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (!isMobile) return;
-
-      const DeviceOrientationEventTyped = DeviceOrientationEvent as unknown as {
-        requestPermission?: () => Promise<'granted' | 'denied'>;
-      };
-
-      // iOS 13+ 권한 요청 필요
-      if (typeof DeviceOrientationEventTyped.requestPermission === 'function') {
-        DeviceOrientationEventTyped.requestPermission()
-          .then((permission) => {
-            if (permission === 'granted') {
-              gyroEnabled = true;
-              window.addEventListener('deviceorientation', onDeviceOrientation);
+    // 자이로 연결 (three-stdlib DeviceOrientationControls.connect 패턴)
+    const connectGyro = () => {
+      // iOS 13+ 체크 (window.DeviceOrientationEvent 사용)
+      if (
+        window.DeviceOrientationEvent !== undefined &&
+        typeof (window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === 'function'
+      ) {
+        (window.DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> })
+          .requestPermission()
+          .then((response) => {
+            if (response === 'granted') {
+              window.addEventListener('deviceorientation', handleOrientation);
             }
           })
-          .catch(() => {});
+          .catch((error) => {
+            console.error('DeviceOrientation permission error:', error);
+          });
       } else {
-        // Android 및 구형 iOS
-        gyroEnabled = true;
-        window.addEventListener('deviceorientation', onDeviceOrientation);
+        // Android, 구형 iOS
+        window.addEventListener('deviceorientation', handleOrientation);
       }
     };
 
-    // 터치 시 권한 요청 (iOS는 사용자 제스처 필요)
-    window.addEventListener('touchstart', initGyro, { once: true });
+    // 모바일: 터치 시 권한 요청
+    if (isMobile) {
+      window.addEventListener('touchstart', connectGyro, { once: true });
+    }
 
     let currentX = 0;
     let currentY = 0;
@@ -229,8 +227,8 @@ export const HeroAscii = () => {
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('deviceorientation', onDeviceOrientation);
-      window.removeEventListener('touchstart', initGyro);
+      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('touchstart', connectGyro);
       window.removeEventListener('resize', resize);
       renderer.dispose();
       mountRef.current?.removeChild(effect.domElement);

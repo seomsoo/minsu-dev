@@ -1,5 +1,19 @@
 import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
 import './globals.css';
+
+const pretendard = localFont({
+  src: '../../public/fonts/PretendardVariable.woff2',
+  display: 'swap',
+  weight: '45 920',
+  variable: '--font-pretendard',
+});
+
+const jetbrainsMono = localFont({
+  src: '../../public/fonts/JetBrainsMono-Bold.woff2',
+  display: 'swap',
+  variable: '--font-jetbrains',
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seominsu.dev';
 const SITE_NAME = '서민수 | Frontend Developer';
@@ -85,29 +99,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://cdn.jsdelivr.net"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
-        />
-      </head>
-      <body className="antialiased">{children}</body>
+    <html lang="ko" className={`${pretendard.variable} ${jetbrainsMono.variable}`}>
+      <body className={`${pretendard.className} antialiased`}>{children}</body>
     </html>
   );
 }
