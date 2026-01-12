@@ -170,38 +170,43 @@ export const HeroAscii = () => {
     window.addEventListener('mousemove', onMouseMove);
 
     // 자이로 (모바일)
+    let gyroEnabled = false;
     const onDeviceOrientation = (e: DeviceOrientationEvent) => {
       if (e.gamma === null || e.beta === null) return;
-      targetX = (e.gamma / 45) * 1; // 좌우 기울기 (-45 ~ 45)
-      targetY = ((e.beta - 45) / 45) * 1; // 앞뒤 기울기 (0 ~ 90, 45를 중심으로)
+      targetX = (e.gamma / 45) * 1;
+      targetY = ((e.beta - 45) / 45) * 1;
     };
 
-    // iOS 권한 요청
-    const requestGyroPermission = async () => {
+    // 모바일 자이로 초기화
+    const initGyro = () => {
+      if (gyroEnabled) return;
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (!isMobile) return;
+
       const DeviceOrientationEventTyped = DeviceOrientationEvent as unknown as {
         requestPermission?: () => Promise<'granted' | 'denied'>;
       };
 
+      // iOS 13+ 권한 요청 필요
       if (typeof DeviceOrientationEventTyped.requestPermission === 'function') {
-        try {
-          const permission = await DeviceOrientationEventTyped.requestPermission();
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', onDeviceOrientation);
-          }
-        } catch {
-          // 권한 거부 또는 에러
-        }
+        DeviceOrientationEventTyped.requestPermission()
+          .then((permission) => {
+            if (permission === 'granted') {
+              gyroEnabled = true;
+              window.addEventListener('deviceorientation', onDeviceOrientation);
+            }
+          })
+          .catch(() => {});
       } else {
+        // Android 및 구형 iOS
+        gyroEnabled = true;
         window.addEventListener('deviceorientation', onDeviceOrientation);
       }
     };
 
-    // 터치 시 권한 요청 (iOS)
-    const onTouchStart = () => {
-      requestGyroPermission();
-      window.removeEventListener('touchstart', onTouchStart);
-    };
-    window.addEventListener('touchstart', onTouchStart, { once: true });
+    // 터치 시 권한 요청 (iOS는 사용자 제스처 필요)
+    window.addEventListener('touchstart', initGyro, { once: true });
 
     let currentX = 0;
     let currentY = 0;
@@ -225,7 +230,7 @@ export const HeroAscii = () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('deviceorientation', onDeviceOrientation);
-      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchstart', initGyro);
       window.removeEventListener('resize', resize);
       renderer.dispose();
       mountRef.current?.removeChild(effect.domElement);
