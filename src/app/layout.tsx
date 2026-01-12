@@ -10,7 +10,20 @@ const pretendard = localFont({
 });
 
 const jetbrainsMono = localFont({
-  src: '../../public/fonts/JetBrainsMono-Bold.woff2',
+  src: [
+    {
+      path: '../../public/fonts/JetBrainsMono-Regular.woff2',
+      weight: '400',
+    },
+    {
+      path: '../../public/fonts/JetBrainsMono-SemiBold.woff2',
+      weight: '600',
+    },
+    {
+      path: '../../public/fonts/JetBrainsMono-Bold.woff2',
+      weight: '700',
+    },
+  ],
   display: 'swap',
   variable: '--font-jetbrains',
 });
