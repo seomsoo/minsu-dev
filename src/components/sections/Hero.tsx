@@ -5,7 +5,7 @@ import { HeroAscii } from '../ui/HeroAscii';
 
 export const Hero = () => {
   return (
-    <section className="relative h-screen overflow-hidden">
+    <section className="relative h-screen overflow-hidden font-sans">
       <motion.div className="relative z-10 flex h-full flex-col justify-between">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
