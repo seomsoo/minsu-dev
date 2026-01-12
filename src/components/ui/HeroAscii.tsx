@@ -171,27 +171,30 @@ export const HeroAscii = () => {
     };
     window.addEventListener('mousemove', onMouseMove);
 
-    // 자이로 (모바일)
+    // 자이로 (모바일) - three-stdlib 패턴
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.gamma === null || event.beta === null) return;
       targetX = (event.gamma / 45) * 1;
       targetY = ((event.beta - 45) / 45) * 1;
     };
 
-    // iOS 13+ 권한 요청 (사용자 제스처 내에서 동기적으로 호출)
-    const requestGyroPermission = () => {
-      const DOE = DeviceOrientationEvent as unknown as {
-        requestPermission?: () => Promise<string>;
-      };
-
-      if (typeof DOE.requestPermission === 'function') {
-        DOE.requestPermission()
-          .then((state) => {
-            if (state === 'granted') {
+    // 자이로 연결 (three-stdlib DeviceOrientationControls.connect 패턴)
+    const connectGyro = () => {
+      // iOS 13+ 체크 (window.DeviceOrientationEvent 사용)
+      if (
+        window.DeviceOrientationEvent !== undefined &&
+        typeof (window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === 'function'
+      ) {
+        (window.DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> })
+          .requestPermission()
+          .then((response) => {
+            if (response === 'granted') {
               window.addEventListener('deviceorientation', handleOrientation);
             }
           })
-          .catch(console.error);
+          .catch((error) => {
+            console.error('DeviceOrientation permission error:', error);
+          });
       } else {
         // Android, 구형 iOS
         window.addEventListener('deviceorientation', handleOrientation);
@@ -200,7 +203,7 @@ export const HeroAscii = () => {
 
     // 모바일: 터치 시 권한 요청
     if (isMobile) {
-      window.addEventListener('touchstart', requestGyroPermission, { once: true });
+      window.addEventListener('touchstart', connectGyro, { once: true });
     }
 
     let currentX = 0;
@@ -225,7 +228,7 @@ export const HeroAscii = () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('touchstart', requestGyroPermission);
+      window.removeEventListener('touchstart', connectGyro);
       window.removeEventListener('resize', resize);
       renderer.dispose();
       mountRef.current?.removeChild(effect.domElement);
