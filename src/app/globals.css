@@ -14,8 +14,8 @@
   --color-text-secondary: var(--text-secondary);
   --color-accent: var(--accent);
   --color-border: var(--border);
-  --font-sans: 'Pretendard', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
 }
 
 html,
