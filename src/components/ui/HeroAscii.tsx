@@ -201,9 +201,9 @@ export const HeroAscii = () => {
       }
     };
 
-    // 모바일: 터치 시 권한 요청
+    // 모바일: 터치 시 권한 요청 (iOS는 click 또는 touchend 필요)
     if (isMobile) {
-      window.addEventListener('touchstart', connectGyro, { once: true });
+      window.addEventListener('click', connectGyro, { once: true });
     }
 
     let currentX = 0;
@@ -228,7 +228,7 @@ export const HeroAscii = () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('touchstart', connectGyro);
+      window.removeEventListener('click', connectGyro);
       window.removeEventListener('resize', resize);
       renderer.dispose();
       mountRef.current?.removeChild(effect.domElement);
