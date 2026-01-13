@@ -28,7 +28,7 @@ const jetbrainsMono = localFont({
   variable: '--font-jetbrains',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://minsu-dev-ten.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 const SITE_NAME = '서민수 | Frontend Developer';
 const SITE_DESCRIPTION =
   'React, Next.js, TypeScript 기반 프론트엔드 개발자 서민수입니다.';
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#f5f5f2',
+  themeColor: '#f5f5f5',
   width: 'device-width',
   initialScale: 1,
 };
@@ -112,7 +112,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${pretendard.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="ko"
+      className={`${pretendard.variable} ${jetbrainsMono.variable}`}
+    >
       <body className={`${pretendard.className} antialiased`}>{children}</body>
     </html>
   );
