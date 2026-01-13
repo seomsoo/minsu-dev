@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://minsu-dev-ten.vercel.app';
+  const isProduction = process.env.NODE_ENV === 'production';
 
   return {
     rules: [
@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    ...(isProduction && {
+      sitemap: 'https://seominsu.dev/sitemap.xml',
+    }),
   };
 }

@@ -1,6 +1,6 @@
 import { AUTHOR, PROJECTS } from '@/content/resume';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://minsu-dev-ten.vercel.app';
+const SITE_URL = 'https://seominsu.dev';
 
 export const JsonLd = () => {
   const personSchema = {
