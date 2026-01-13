@@ -28,7 +28,7 @@ const jetbrainsMono = localFont({
   variable: '--font-jetbrains',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seominsu.dev';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://minsu-dev-ten.vercel.app';
 const SITE_NAME = '서민수 | Frontend Developer';
 const SITE_DESCRIPTION =
   'React, Next.js, TypeScript 기반 프론트엔드 개발자 서민수입니다.';
