@@ -1,5 +1,7 @@
 packages:
-  - .
-ignoredBuiltDependencies:
+  - apps/*
+  - packages/*
+onlyBuiltDependencies:
+  - esbuild
   - sharp
   - unrs-resolver
