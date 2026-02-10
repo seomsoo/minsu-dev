@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { MotionProvider } from '@/components/MotionProvider';
+import { SITE_URL } from '@/lib/constants';
 import './globals.css';
 
 const pretendard = localFont({
@@ -28,7 +30,6 @@ const jetbrainsMono = localFont({
   variable: '--font-jetbrains',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 const SITE_NAME = '서민수 | Frontend Developer';
 const SITE_DESCRIPTION =
   'React, Next.js, TypeScript 기반 프론트엔드 개발자 서민수입니다.';
@@ -40,6 +41,9 @@ export const metadata: Metadata = {
     template: '%s | 서민수',
   },
   description: SITE_DESCRIPTION,
+  icons: {
+    icon: '/favicon.ico',
+  },
   keywords: [
     '프론트엔드 개발자',
     'Frontend Developer',
@@ -50,6 +54,8 @@ export const metadata: Metadata = {
     'TypeScript',
     '프론트엔드 포트폴리오',
     '웹 개발자',
+    '기술 블로그',
+    'tech blog',
   ],
   authors: [{ name: '서민수', url: SITE_URL }],
   creator: '서민수',
@@ -91,10 +97,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'YOUR_GOOGLE_VERIFICATION_CODE', // Google Search Console에서 발급
-    // naver: 'YOUR_NAVER_VERIFICATION_CODE', // 네이버 웹마스터 도구
-  },
   alternates: {
     canonical: SITE_URL,
   },
@@ -116,7 +118,9 @@ export default function RootLayout({
       lang="ko"
       className={`${pretendard.variable} ${jetbrainsMono.variable}`}
     >
-      <body className={`${pretendard.className} antialiased`}>{children}</body>
+      <body className={`${pretendard.className} antialiased`}>
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }

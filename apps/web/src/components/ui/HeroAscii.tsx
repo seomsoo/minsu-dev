@@ -9,21 +9,33 @@ export const HeroAscii = () => {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!mountRef.current) return;
+    const mount = mountRef.current;
+    if (!mount) return;
 
-    const originalGetContext = HTMLCanvasElement.prototype.getContext as any;
+    let disposed = false;
+
+    // getContext has 5 overloaded signatures — simplified type for monkey-patch
+    type GetContextFn = (
+      this: HTMLCanvasElement,
+      contextId: string,
+      options?: object,
+    ) => RenderingContext | null;
+
+    const originalGetContext = HTMLCanvasElement.prototype
+      .getContext as GetContextFn;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (HTMLCanvasElement.prototype as any).getContext = function (
       this: HTMLCanvasElement,
-      type: string,
-      options?: any,
+      contextId: string,
+      options?: object,
     ) {
-      if (type === '2d') {
-        return originalGetContext.call(this, type, {
-          ...options,
+      if (contextId === '2d') {
+        return originalGetContext.call(this, contextId, {
+          ...(options as CanvasRenderingContext2DSettings),
           willReadFrequently: true,
         });
       }
-      return originalGetContext.call(this, type, options);
+      return originalGetContext.call(this, contextId, options);
     };
 
     //  Scene & Camera
@@ -114,15 +126,15 @@ export const HeroAscii = () => {
     };
 
     const resize = () => {
-      if (!mountRef.current) return;
-      const { width, height } = mountRef.current.getBoundingClientRect();
+      if (!mount) return;
+      const { width, height } = mount.getBoundingClientRect();
       effect.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       applyResponsiveConfig();
     };
 
-    mountRef.current.appendChild(effect.domElement);
+    mount.appendChild(effect.domElement);
     applyResponsiveConfig();
     resize();
     window.addEventListener('resize', resize);
@@ -132,6 +144,8 @@ export const HeroAscii = () => {
     const loader = new FontLoader();
 
     loader.load('/fonts/JetBrainsMono_Bold.typeface.json', (font) => {
+      if (disposed) return;
+
       const geometry = new TextGeometry('< />', {
         font,
         size: 1.2,
@@ -161,7 +175,7 @@ export const HeroAscii = () => {
 
     let targetX = 0;
     let targetY = 0;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
     // 마우스 (데스크탑)
     const onMouseMove = (e: MouseEvent) => {
@@ -183,9 +197,17 @@ export const HeroAscii = () => {
       // iOS 13+ 체크 (window.DeviceOrientationEvent 사용)
       if (
         window.DeviceOrientationEvent !== undefined &&
-        typeof (window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === 'function'
+        typeof (
+          window.DeviceOrientationEvent as unknown as {
+            requestPermission?: () => Promise<string>;
+          }
+        ).requestPermission === 'function'
       ) {
-        (window.DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> })
+        (
+          window.DeviceOrientationEvent as unknown as {
+            requestPermission: () => Promise<string>;
+          }
+        )
           .requestPermission()
           .then((response) => {
             if (response === 'granted') {
@@ -225,14 +247,19 @@ export const HeroAscii = () => {
     animate();
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(animationId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('deviceorientation', handleOrientation);
       window.removeEventListener('click', connectGyro);
       window.removeEventListener('resize', resize);
+      renderer.forceContextLoss();
       renderer.dispose();
-      mountRef.current?.removeChild(effect.domElement);
-      HTMLCanvasElement.prototype.getContext = originalGetContext;
+      if (mount.contains(effect.domElement)) {
+        mount.removeChild(effect.domElement);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (HTMLCanvasElement.prototype as any).getContext = originalGetContext;
     };
   }, []);
 

@@ -1,6 +1,5 @@
 import { AUTHOR, PROJECTS } from '@/content/resume';
-
-const SITE_URL = 'https://seominsu.dev';
+import { SITE_URL } from '@/lib/constants';
 
 export const JsonLd = () => {
   const personSchema = {
