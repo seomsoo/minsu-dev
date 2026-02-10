@@ -1,1 +1,1 @@
-## 🥷 Personal web portfolio of frontend developer Minsu Seo.
+## 🥷 seominsu.dev — portfolio & blog
