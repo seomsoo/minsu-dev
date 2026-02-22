@@ -1,0 +1,687 @@
+---
+title: 프론트엔드 테스트 전략과 도구 트레이드오프
+slug: frontend-testing
+date: 2026-02-11
+description: 프로젝트에서 프론트엔드 테스트를 도입하면서 했던 고민과 선택들
+category: dev
+tags:
+  - testing
+  - React Testing Library
+  - jest
+  - playwright
+  - frontend
+published: true
+---
+
+## 테스트 코드란
+
+테스트 코드는 내가 작성한 코드가 의도대로 동작하는지 확인하는 코드다.
+
+예를 들어 로그인 함수를 만들었으면 올바른 이메일과 비밀번호를 넣었을 때 토큰이 나오는지
+틀린 비밀번호를 넣었을 때 에러가 나오는지를 코드로 검증하는 거다.
+한 번 작성해두면 코드를 수정할 때마다 자동으로 실행해서 기존 동작이 깨지지 않았는지 알려준다.
+
+```typescript
+// ex
+test('올바른 이메일과 비밀번호로 로그인하면 토큰을 반환한다', () => {
+  const result = login('user@test.com', 'password123');
+  expect(result.token).toBeDefined();
+});
+
+test('틀린 비밀번호로 로그인하면 에러가 발생한다', () => {
+  expect(() => login('user@test.com', 'wrong')).toThrow();
+});
+```
+
+사람이 브라우저를 열어서 직접 확인하는 대신 코드가 대신 확인해주는 거라고 보면 된다.
+
+## 테스트를 도입한 이유
+
+이 글에서 다루는 프로젝트는 [모임 플랫폼 서비스](https://www.updo.site/)다.
+사용자가 모임을 개설하고 참여 신청을 하거나 찜을 누르고 리뷰를 작성하는 흐름이 핵심이다.
+프론트엔드 4명이 함께 진행한 팀 프로젝트로 이번에 처음으로 테스트 코드를 도입해봤다.
+
+팀 프로젝트는 혼자 하는 작업과 다르다.
+내가 안 짠 코드를 고쳐야 할 때도 있고 다른 팀원이 내가 만든 컴포넌트를 수정할 때도 있다.
+그때마다 "이거 고치면 다른 데는 안 터지나?" 하는 걱정이 생긴다.
+
+이 프로젝트에서는 특히 그런 상황이 많았다.
+
+모임 상태 판단 로직(`gatheringState`)은 찜 버튼, 참여 버튼, 리뷰 작성 버튼, 개설 취소 등
+여러 컴포넌트가 같이 쓰는 코드였다.
+모임이 끝났는지, 내가 참여했는지, 리뷰를 이미 썼는지 같은 조건들을 조합해서 버튼 상태를 결정하는 건데
+이게 수정되면 어느 화면에서 뭐가 깨질지 바로 알기가 어려웠다.
+
+인증 플로우도 마찬가지였다.
+로그인 실패 횟수 추적, 30초 잠금, 토큰 만료 처리 같은 조건 분기가 얽혀 있어서
+누가 이 부분을 건드리면 다른 케이스가 슬쩍 깨질 수 있었다.
+
+이걸 수동으로 확인하려면 브라우저를 열고 매번 시나리오를 직접 돌려봐야 한다.
+팀원이 뭔가 고칠 때마다 관련 케이스를 전부 손으로 확인하는 건 할 수는 있지만 계속하기엔 너무 비효율적이다.
+그래서 코드를 바꿨을 때 다른 데가 안 터졌는지 자동으로 확인해주는 안전망이 필요했다.
+
+## 수동 테스트와 자동화 테스트
+
+> ### 수동 테스트의 한계
+
+테스트를 작성하지 않아도 개발은 된다.
+기능을 만들고 브라우저를 열고 직접 클릭해서 눈으로 확인하는 것도 테스트다.
+
+그런데 수동 테스트는 기능이 쌓일수록 비용이 커진다.
+
+기능이 하나일 때는 확인할 게 별로 없다.
+기능이 늘어나면 확인해야 할 조합도 같이 늘어난다.
+새 기능을 추가할 때마다 기존 기능까지 손으로 확인해야 하고
+같은 걸 반복하다 보면 사람은 결국 빠뜨린다.
+**자동화할 수 있는 것까지 수동으로 하고 있으면** 그건 낭비라고 느꼈다.
+
+> ### 자동화 테스트가 하는 일
+
+자동화 테스트는 코드를 바꾼 뒤에 기존 동작이 그대로 유지되는지 빠르게 확인해준다.
+
+이번 프로젝트에서 인증 잠금 로직을 수정했을 때
+테스트를 돌리니까 10초 안에 관련 케이스를 전부 확인할 수 있었다.
+브라우저 열고 로그인 실패를 5번 직접 해볼 필요가 없었다.
+한 번 작성해두면 코드를 바꿀 때마다 알아서 돌아간다.
+
+> ### 그렇다고 수동 테스트가 필요 없어지는 건 아니다
+
+자동화를 붙였다고 브라우저를 안 열어도 되는 건 아니다.
+새 기능을 만들면 직접 눈으로 확인하는 건 여전히 해야 한다.
+
+자동화는 이미 만든 기능이 안 깨졌는지 확인하는 **회귀 방지(Regression Safety)** 쪽이고
+수동은 새로 만든 기능이 의도대로 동작하는지 직접 보는 쪽이다.
+역할이 다르다.
+
+## 테스트의 종류와 전략
+
+테스트는 검증하는 범위에 따라 크게 세 가지로 나뉜다.
+
+**Unit(유닛) 테스트**는 함수나 모듈 하나를 떼어내서 테스트한다.
+날짜를 포맷팅하는 함수에 `2024-01-01`을 넣으면 `"1월 1일"`이 나오는지,
+가격에 1000을 넣으면 `"1,000원"`이 나오는지 같은 걸 확인한다.
+범위가 작고 빠르지만 컴포넌트끼리 연결됐을 때 생기는 문제는 잡지 못한다.
+
+**Integration(통합) 테스트**는 여러 모듈이 합쳐진 결과를 테스트한다.
+프론트엔드에서는 보통 컴포넌트를 실제로 렌더링하고 사용자처럼 클릭하고 타이핑해서
+화면에 원하는 결과가 나타나는지를 확인한다.
+버튼을 클릭했을 때 모달이 열리는지, 별점과 리뷰를 입력하면 등록 버튼이 활성화되는지 같은 걸 검증한다.
+
+**E2E(End-to-End) 테스트**는 실제 브라우저를 띄워서 앱 전체를 테스트한다.
+회원가입을 하고, 로그인하고, 모임에 참여하는 것처럼 사용자가 실제로 하는 전체 흐름을 검증한다.
+가장 현실적이지만 느리고 깨지기 쉽다.
+
+> ### Test Pyramid
+
+<img src="/blog/frontend-testing/test-pyramid.webp" alt="Test pyramid 구조" width="600" />
+
+테스트 전략을 찾아보면 **Test Pyramid**이 먼저 나온다.
+유닛 테스트를 많이 깔고 위로 갈수록 E2E를 줄이는 구조다.
+
+그런데 프론트엔드에서 유닛을 많이 쓰다 보면
+함수가 호출됐는지 state가 바뀌었는지 같은 **구현 세부사항**을 검증하게 된다.
+
+이 프로젝트에서 그걸 직접 겪었다.
+
+`gatheringState`의 내부 헬퍼 함수들을 유닛으로 잡으면 처음엔 괜찮아 보인다.
+그런데 상태 구조를 조금 바꾸거나 함수명을 고치면 화면은 멀쩡한데 테스트가 깨진다.
+반대로 버튼과 핸들러를 잘못 연결해도 내부 상태만 보는 테스트는 이걸 못 잡는다.
+
+내가 실제로 확인하고 싶었던 건
+**이 조건에서 이 버튼이 제대로 나타나는가?** 였다.
+그건 유닛이 아니라 컴포넌트를 렌더링해서 확인하는 Integration 테스트의 영역이다.
+
+> ### Test Trophy
+
+<img
+  src="/blog/frontend-testing/test-trophy.webp"
+  alt="Test trophy 구조"
+  width="400"
+  height="400"
+/>
+
+React Testing Library를 만든 **Kent C. Dodds**는 이 문제를 정리하면서
+**Testing Trophy** 전략을 제안했다.
+
+```
+              E2E         ← 실제 브라우저에서 전체 흐름 검증. 느리지만 현실적
+          Integration     ← 가장 넓은 허리. 컴포넌트 렌더링 + 사용자 조작
+             Unit         ← 함수/로직 단위. 빠르지만 범위가 좁다
+            Static        ← TypeScript, ESLint. 실행 전에 잡는 타입/문법 오류
+```
+
+아래에서 위로 갈수록 비용이 높고 느려지는 구조인데
+피라미드와 달리 **Integration이 가장 넓은 비중**을 차지한다.
+
+> The more your tests resemble the way your software is used, the more confidence they can give you. — Kent C. Dodds
+> (테스트가 소프트웨어를 사용하는 방식과 가까울수록 신뢰도가 높다.)
+
+이 프로젝트에서는 여러 컴포넌트가 같은 로직을 공유하고 팀원들이 서로 코드를 건드리는 환경이었다.
+**화면이 의도대로 동작하는가**를 검증하는 게 목적이었으니까 Integration 중심이 잘 맞았다.
+내부 구현이 아니라 화면에 뭐가 나타나는지를 보기 때문에
+내부를 리팩토링해도 테스트가 살아있을 가능성이 높다.
+
+그렇다고 유닛 테스트를 아예 안 쓴 건 아니다.
+날짜 포맷팅, 필터 정규화 같은 순수 함수는 입력-출력이 명확해서 유닛이면 충분하다.
+`gatheringState`도 복잡한 조건 분기는 유닛으로 잡고
+실제 렌더링 결과는 Integration으로 확인했다.
+
+> ### 이 프로젝트에서의 비율
+
+```
+           E2E       17개 × 3 브라우저
+       Integration   81개 ← 중심
+          Unit       57개
+         Static      TypeScript strict + ESLint + Prettier
+```
+
+Integration을 중심에 두고 Unit은 복잡한 비즈니스 로직에만 제한했다.
+E2E는 핵심 사용자 플로우 5가지(인증, 모임 탐색, 찜, 마이페이지, 리뷰)만 최소로 유지했다.
+
+> ### 테스트 개발 방법론 — TDD, BDD, ATDD
+
+테스트를 언제 작성하느냐 어떤 관점에서 작성하느냐에 따라 방법론이 나뉜다.
+
+**TDD(Test-Driven Development)** 는 코드를 쓰기 전에 테스트를 먼저 작성하는 방식이다.
+흐름은 이렇다.
+
+- Red: 실패하는 테스트를 먼저 작성한다. 아직 구현이 없으니 당연히 실패한다
+- Green: 그 테스트를 통과시키는 최소한의 코드를 작성한다
+- Refactor: 통과한 코드를 정리한다. 테스트는 그대로 유지되니까 안심하고 고칠 수 있다
+
+이 사이클을 계속 반복하면서 기능을 쌓아가는 거다.
+**이 코드가 뭘 해야 하는지**를 먼저 정의하고 들어가기 때문에 불필요한 코드가 줄어든다고 한다.
+
+그런데 프론트엔드에서는 적용이 좀 까다로울 것 같았다.
+백엔드는 입력값을 넣으면 출력값이 나오는 구조라서 테스트를 먼저 쓰기 쉬운 반면
+프론트엔드는 "버튼을 클릭하면 모달이 열린다" 같은 인터랙션을 다루다 보니
+테스트를 먼저 쓰려면 UI 구조까지 미리 머릿속에 그려놔야 할 것 같았다.
+
+**BDD(Behavior-Driven Development)** 는 TDD에서 파생됐다.
+TDD가 입력값에 대한 출력값을 비교한다면 BDD는 사용자의 행동에 대한 결과를 비교하는 방식이다.
+
+- Given: 초기 상태 — 사용자가 로그인한 상태에서
+- When: 행동 — 리뷰 작성 버튼을 클릭하면
+- Then: 기대 결과 — 모달이 열린다
+
+이렇게 쓰면 개발자가 아닌 사람(기획자, QA)도 "아, 이 시나리오를 검증하는 거구나" 하고 읽을 수 있다.
+
+**ATDD(Acceptance Test-Driven Development)** 는 인수 조건을 먼저 정하고 개발하는 방식이다.
+**이 기능이 완성됐다**고 할 수 있는 기준을 기획자, 개발자, QA가 같이 정의하고
+그 기준을 자동화된 테스트로 만든 뒤에 구현에 들어간다.
+BDD와 비슷해 보이지만 ATDD는 **관계자들이 합의하는 과정** 자체에 더 무게를 둔다.
+
+이 프로젝트에서는 TDD를 적용하지 않았다.
+테스트 코드 자체를 처음 작성하는 상황에서 테스트를 먼저 쓰고 구현하는 흐름까지 가져가기엔 좀 무리였다.
+일단 기존 코드에 테스트를 붙이는 것부터 익숙해지자는 게 현실적인 판단이었다.
+
+다만 BDD의 Given/When/Then 구조는 신경 쓰면서 테스트를 작성했다.
+찜 버튼 테스트에서 이런 패턴을 쓰고 있다.
+
+```typescript
+test('클릭하면 찜 상태가 토글된다', async () => {
+  // Given: 하이드레이션 완료, 유저 로그인
+  const user = userEvent.setup();
+  act(() => {
+    useUserStore.setState({ user: mockUser(1, 'User') });
+    useFavoriteStore.setState({ _hasHydrated: true, favorites: {} });
+  });
+
+  renderWithProviders(<FavoriteButton itemId={42} />);
+
+  // When: 찜 버튼 클릭
+  await user.click(screen.getByLabelText('찜하기'));
+
+  // Then: 찜 상태가 true
+  expect(useFavoriteStore.getState().isFavorite(42)).toBe(true);
+});
+```
+
+TDD는 테스트 작성에 더 익숙해진 다음 프로젝트에서 시도해보려고 한다.
+
+## 테스트 커버리지
+
+> ### 커버리지 수치를 목표로 삼지 않은 이유
+
+테스트를 도입하면 자연스럽게 드는 질문이 있다.
+"커버리지 몇 %를 목표로 해야 하나?" 80%? 90%? 100%?
+
+이 프로젝트에서는 수치를 목표로 삼지 않았다.
+
+커버리지는 **코드가 실행됐는지**만 알려준다.
+그 코드가 제대로 동작했는지, 실제 사용자 시나리오를 커버하는지는 모른다.
+
+100%를 강제하면 수치를 채우기 위한 의미 없는 테스트가 생길 수 있다.
+`About` 페이지와 `Checkout` 페이지가 커버리지 계산에서 같은 가중치를 가지는 것처럼
+중요도가 전혀 다른 코드가 같은 취급을 받는다.
+숫자를 맞추다 보면 테스트를 위한 테스트를 쓰게 될 것 같았다.
+
+> ### 대신 유스케이스 기준을 썼다
+
+수치 대신 **이 플로우에 회귀 방지 테스트가 존재하는가**를 기준으로 삼았다.
+
+테스트가 없는 코드가 있어도 그게 별로 중요하지 않은 시나리오라면 괜찮다.
+커버리지가 낮더라도 핵심 플로우에 테스트가 있으면 그게 더 가치 있다고 판단했다.
+
+이 프로젝트에서 **이건 반드시 테스트가 있어야 한다**고 판단한 시나리오는 이거였다.
+
+> - 로그인 / 회원가입 → 회귀가 생기면 서비스 전체에 영향
+> - 모임 참여 / 취소 → 핵심 비즈니스 로직
+> - 리뷰 작성 검증 → 잘못된 데이터가 서버로 가면 안 됨
+> - 인증 잠금 (5회 실패) → 보안 관련 엣지 케이스
+
+이 시나리오들에 테스트가 있는지가 기준이었지 커버리지 숫자가 기준이 아니었다.
+
+커버리지 리포트는 테스트가 전혀 없는 영역을 한눈에 파악할 때 도움이 된다.
+다만 이 수치를 CI에서 통과 조건으로 강제하거나 성과 지표로 사용하지는 않았다.
+
+## 도구 선택 — 트레이드오프
+
+> ### Jest vs Vitest
+
+Vitest가 빠르다는 글이 많다. Vite 기반이라 ESM을 네이티브로 지원하고 실행 속도에서 확실히 차이가 있다.
+
+그런데 Next.js는 Jest를 공식 지원한다.
+`next/jest` 설정 한 줄이면 TypeScript, CSS 모듈, 절대 경로까지 알아서 잡아준다.
+Vitest로 같은 걸 하려면 그 부분을 직접 맞춰야 한다.
+
+그리고 이 프로젝트 규모에서 속도 차이를 체감하기 어렵기도 해서 Jest를 선택했다.
+
+> ### Playwright vs Cypress
+
+E2E 도구는 Cypress를 먼저 봤다. 레퍼런스가 풍부하고 UI가 직관적이다.
+
+Cypress의 제약은 두 가지다.
+크로스 브라우저 지원이 Chromium 중심이고 병렬 실행이 유료 플랜에서만 된다.
+
+Playwright는 Chromium, WebKit, Firefox를 네이티브로 지원하고 병렬 실행이 기본이다.
+모바일 디바이스 에뮬레이션도 설정값 하나로 된다.
+
+E2E는 실제 브라우저를 띄우기 때문에 테스트 하나하나가 느리다.
+17개 테스트를 3개 브라우저에서 순차적으로 돌리면 CI 시간이 너무 길어질 것 같았다.
+병렬로 돌리면 브라우저별로 동시에 실행되니까 시간을 줄일 수 있어서 Playwright를 선택했다.
+
+> ### React Testing Library
+
+React 컴포넌트를 테스트하는 라이브러리로는 **Enzyme**과 **React Testing Library(RTL)**가 있다.
+
+Enzyme은 컴포넌트의 내부 state나 props, 인스턴스 메서드에 직접 접근해서 테스트한다.
+`wrapper.state('count')`처럼 컴포넌트 안을 들여다보는 방식인데
+그러다 보니 내부 구조를 조금만 바꿔도 테스트가 깨진다.
+React 18 이후로는 공식 지원도 끊겼다.
+
+RTL은 반대다. 컴포넌트 내부에는 접근하지 않고, 렌더링된 DOM만 다룬다.
+Kent C. Dodds가 만든 라이브러리인데 앞에서 말한 Testing Trophy 철학이 그대로 녹아 있다.
+**사용자가 보는 것**을 테스트하자는 거다.
+
+요소를 찾을 때도 사용자가 화면을 인식하는 방식에 가까운 순서로 쿼리를 쓴다.
+
+- `getByRole` — 역할(button, radio 등)로 찾기. 가장 먼저 시도
+- `getByLabelText` — label로 연결된 요소 찾기
+- `getByText` — 화면에 보이는 텍스트로 찾기
+- `data-testid` — 위 방법으로 안 될 때 마지막 수단
+
+`data-testid`는 사용자 눈에 보이지 않는 속성이니까 가능하면 안 쓰는 게 좋다.
+
+이 프로젝트에서는 RTL에 `userEvent`를 같이 써서 Integration 테스트를 작성했다.
+`userEvent`는 클릭 한 번을 할 때도 실제 브라우저처럼 pointerdown → mousedown → focus → click 순서로 이벤트를 발생시킨다.
+`fireEvent.click()`은 click 이벤트만 딱 발생시키는 거라서 실제 사용자 조작과는 차이가 있다.
+
+> ### MSW vs 직접 Mock
+
+이 프로젝트는 컴포넌트가 API를 직접 호출하지 않는다.
+
+```
+컴포넌트 → authService.signin() → HTTP 클라이언트 → 서버
+```
+
+`authService`, `gatheringService` 같은 서비스 함수가 HTTP 호출을 감싸고 있다.
+컴포넌트는 `authService.signin(email, password)`만 호출하면 되고
+그 안에서 어떤 URL로 어떤 형식의 요청이 나가는지는 몰라도 된다.
+
+테스트에서도 이 경계를 그대로 썼다.
+컴포넌트가 아는 건 서비스 함수까지니까
+그 레벨에서 jest.mock으로 갈아끼우면 충분했다.
+
+MSW(Mock Service Worker)는 Service Worker 레벨에서 HTTP 요청 자체를 가로채는 도구다.
+컴포넌트가 fetch를 직접 호출하는 구조라면 유용하지만
+이미 서비스 레이어로 분리돼 있어서 HTTP 레벨까지 내려갈 필요가 없었다.
+
+```typescript
+jest.mock('@/services/auths/authService', () => ({
+  authService: { signin: jest.fn() },
+}));
+
+// 성공 케이스
+(authService.signin as jest.Mock).mockResolvedValueOnce({
+  token: 'mocked-jwt',
+});
+
+// 실패 케이스
+(authService.signin as jest.Mock).mockRejectedValueOnce({
+  parameter: 'email',
+  message: '존재하지 않는 이메일입니다.',
+});
+```
+
+E2E에서는 얘기가 다르다. 실제 앱을 띄워서 테스트하니까 서비스 함수 레벨 목킹이 안 된다.
+그래서 Playwright의 `page.route()`로 네트워크 요청을 가로채는 방식을 썼다.
+
+같은 **Mock**이지만 끊는 위치가 다른 거다. Jest에서는 서비스 함수를 교체하고, E2E에서는 HTTP를 가로챈다.
+
+## 실제로 어떻게 썼는가
+
+> ### Integration Test
+
+`WriteReviewModal` 테스트를 예시로 보면 별점과 리뷰를 모두 입력했을 때 등록 버튼이 활성화되고
+제출 중에는 버튼이 "등록 중…"으로 바뀌는 걸 검증한다.
+
+`renderModal()`은 `WriteReviewModal`에 필요한 props를 기본값으로 채워서 렌더링해주는 헬퍼다.
+테스트마다 같은 props를 반복 안 쓰려고 미리 만들어둔 것이다.
+
+```typescript
+test('별점과 리뷰를 모두 입력하면 등록 버튼이 활성화된다', async () => {
+  const user = userEvent.setup(); // 실제 브라우저처럼 이벤트를 순서대로 발생시키는 유틸
+  renderModal();
+
+  // 초기 상태: 등록 버튼 비활성
+  expect(screen.getByRole('button', { name: '등록' })).toBeDisabled();
+
+  await user.click(screen.getByRole('radio', { name: '4점 평가' }));
+  await user.type(
+    screen.getByLabelText('경험에 대해 남겨주세요.'),
+    '좋은 모임이었습니다',
+  );
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: '등록' })).toBeEnabled();
+  });
+});
+
+test('제출 중에는 버튼이 "등록 중…"으로 바뀌고 비활성화된다', async () => {
+  const user = userEvent.setup();
+  // API 응답을 의도적으로 지연시킴
+  let resolveApi: () => void;
+  mockedCreateReview.mockImplementation(
+    () =>
+      new Promise<never>((resolve) => {
+        resolveApi = resolve as () => void;
+      }),
+  );
+
+  renderModal();
+  await user.click(screen.getByRole('radio', { name: '4점 평가' }));
+  await user.type(
+    screen.getByLabelText('경험에 대해 남겨주세요.'),
+    '좋은 모임이었습니다',
+  );
+  await user.click(screen.getByRole('button', { name: '등록' }));
+
+  // API가 응답하기 전의 로딩 상태를 검증
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: '등록 중…' })).toBeDisabled();
+  });
+});
+```
+
+`userEvent`로 실제 사용자처럼 클릭하고 타이핑하고
+`getByRole('radio', { name: '4점 평가' })`처럼 화면에 보이는 역할과 이름으로 요소를 찾는다.
+state 값이 뭔지가 아니라 **버튼이 어떻게 보이는지**를 보기 때문에
+내부 구현을 바꿔도 이 테스트는 깨지지 않을 가능성이 높다.
+
+> ### Unit Test
+
+Integration이 아니라 Unit이 더 맞는 경우도 있다.
+인증 잠금 로직에서 **30초 후 자동 해제**를 검증해야 하는데
+테스트에서 진짜로 30초를 기다릴 수는 없다.
+
+`jest.useFakeTimers()`로 시간을 가짜로 만들고 `jest.advanceTimersByTime()`으로 시간을 앞으로 당겼다.
+
+```typescript
+// LOCK_THRESHOLD = 5 (잠금이 걸리는 실패 횟수)
+// LOCK_MS = 30000 (잠금 지속 시간, 30초)
+// 두 상수 모두 스토어 파일에서 export해서 테스트와 로직이 같은 값을 참조한다
+
+beforeEach(() => {
+  jest.useFakeTimers(); // 실제 시간 대신 가짜 시간을 사용하도록 설정
+});
+
+afterEach(() => {
+  jest.useRealTimers(); // 테스트 후 실제 시간으로 복원
+});
+
+it('5회 실패하면 잠금된다', () => {
+  const { increaseFailedAttempts } = useAuthStore.getState();
+
+  act(() => {
+    // act: React 상태 업데이트를 동기적으로 처리하는 래퍼
+    for (let i = 0; i < LOCK_THRESHOLD; i++) {
+      increaseFailedAttempts();
+    }
+  });
+
+  expect(useAuthStore.getState().isLocked).toBe(true);
+});
+
+it('잠금 후 30초가 지나면 자동 해제된다', () => {
+  const { increaseFailedAttempts } = useAuthStore.getState();
+
+  act(() => {
+    for (let i = 0; i < LOCK_THRESHOLD; i++) increaseFailedAttempts();
+  });
+
+  expect(useAuthStore.getState().isLocked).toBe(true);
+
+  // 실제로 30초를 기다리는 게 아니라 가짜 타이머를 30초 앞으로 당김
+  act(() => {
+    jest.advanceTimersByTime(LOCK_MS);
+  });
+
+  expect(useAuthStore.getState().isLocked).toBe(false);
+  expect(useAuthStore.getState().failedAttempts).toBe(0);
+});
+```
+
+시간에 의존하는 로직은 컴포넌트를 렌더링해서 테스트하기 어려웠다.
+이런 건 스토어 로직만 떼어내서 Unit으로 잡는 게 나았다.
+앞에서 **Unit은 복잡한 로직에만**이라고 했는데 이런 경우를 말한 거다.
+
+> ### 테스트 데이터 관리
+
+테스트마다 모임 데이터를 직접 객체로 만들면 필드를 빠뜨리거나 타입이 안 맞는 실수가 생긴다.
+그래서 기본값을 가진 함수를 하나 만들어두고, 테스트마다 필요한 부분만 덮어쓰는 방식을 썼다.
+
+```typescript
+// factories/gathering.ts
+export function createGathering(overrides?: Partial<IGathering>): IGathering {
+  return {
+    id: 1,
+    type: 'DALLAEMFIT',
+    name: '테스트 모임',
+    dateTime: '2099-12-01T10:00:00Z',
+    registrationEnd: '2099-11-30T10:00:00Z',
+    location: '건대입구',
+    participantCount: 3,
+    capacity: 20,
+    createdBy: 100,
+    image: undefined,
+    ...overrides,
+  };
+}
+```
+
+```typescript
+// 필요한 케이스만 오버라이드
+const canceledGathering = createGathering({
+  canceledAt: '2024-01-01T00:00:00Z',
+});
+const fullGathering = createGathering({ participantCount: 20, capacity: 20 });
+```
+
+이 패턴 덕분에 `gatheringState` 로직에 대한 테스트를 40개 작성하면서도
+각 케이스가 명확하게 분리됐다.
+
+> ### Zustand Hydration 테스트
+
+찜 기능을 만들 때 겪은 문제가 있었다.
+Zustand의 `persist` 미들웨어로 찜 목록을 localStorage에 저장하는데
+페이지를 새로고침하면 찜 버튼이 잠깐 빈 하트로 깜빡이다가 채워진 하트로 바뀌었다.
+
+원인은 하이드레이션 타이밍이었다.
+`persist`가 localStorage에서 데이터를 복원하는 데 약간의 시간이 걸리는데
+그 사이에 컴포넌트가 빈 상태(초기값)로 먼저 렌더링돼 버린다.
+찜한 모임인데 빈 하트가 잠깐 보이다가 뒤늦게 채워지는 거다.
+
+Next.js에서는 이게 깜빡임에서 끝나지 않고 **hydration mismatch**로 이어진다.
+서버는 초기값(빈 상태)으로 HTML을 만들었는데 클라이언트가 localStorage 데이터를 바로 반영하면
+서버와 클라이언트의 HTML이 달라져서 React가 경고를 띄운다.
+
+그래서 스토어에 `_hasHydrated` 플래그를 추가했다.
+localStorage 복원이 끝나기 전까지는 초기 상태만 보여주고, 복원이 끝나면 그때 실제 데이터를 반영한다.
+서버와 클라이언트가 처음에 같은 HTML을 렌더링하니까 mismatch도 안 생긴다.
+
+테스트에서도 이 타이밍을 검증했다.
+
+```typescript
+// _hasHydrated = false (localStorage 복원 전)
+test('하이드레이션 전에는 찜 상태가 반영되지 않는다', () => {
+  renderWithProviders(<FavoriteButton itemId={1} />);
+
+  // localStorage에 찜 데이터가 있어도 아직 복원 전이므로 false
+  const button = screen.getByLabelText('찜하기');
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+});
+
+// _hasHydrated = true (localStorage 복원 완료)
+test('하이드레이션 후에는 저장된 찜 상태가 반영된다', () => {
+  act(() => {
+    useUserStore.setState({ user: mockUser(1, 'User') });
+    useFavoriteStore.setState({ _hasHydrated: true, favorites: {} });
+  });
+
+  renderWithProviders(<FavoriteButton itemId={1} />);
+
+  const button = screen.getByLabelText('찜하기');
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+});
+```
+
+`_hasHydrated`가 `false`일 때와 `true`일 때를 나눠서 검증한다.
+
+> ### E2E Test
+
+E2E(End-to-End) 테스트는 실제 브라우저를 띄워서 사용자가 하는 것처럼 앱을 조작하는 테스트다.
+앞에서 본 Unit이나 Integration은 컴포넌트 단위로 테스트하지만
+E2E는 페이지를 열고, 입력하고, 클릭하고, 다른 페이지로 이동하는 **전체 흐름**을 검증한다.
+
+이 프로젝트에서는 5가지 핵심 플로우를 E2E로 잡았다.
+
+- **인증**: 회원가입 → 자동 로그인 → 홈 리다이렉트, 비밀번호 확인 검증
+- **모임 탐색**: 모임 목록 렌더링, 상세 페이지 이동, 필터 탭 동작
+- **찜**: 찜 상태 localStorage 저장, 찜한 모임 목록 렌더링
+- **마이페이지**: 탭 전환(나의 모임/리뷰/만든 모임), 비로그인 시 리다이렉트
+- **리뷰**: 리뷰 모달 열기, 별점 + 내용 입력 검증, 등록 버튼 활성화 조건
+
+```typescript
+test('회원가입 후 자동으로 로그인되고 홈으로 이동한다', async ({ page }) => {
+  await page.goto('/signup');
+
+  await page.getByLabel('이름').fill('테스트유저');
+  await page.getByLabel('이메일').fill('test@example.com');
+  await page.getByLabel('비밀번호', { exact: true }).fill('password123');
+  await page.getByLabel('비밀번호 확인').fill('password123');
+  await page.getByLabel('회사명').fill('테스트회사');
+
+  await page.getByRole('button', { name: '회원가입' }).click();
+
+  // 회원가입 성공 후 홈으로 리다이렉트됐는지 확인
+  await expect(page).toHaveURL('/');
+});
+```
+
+Unit이나 Integration과 달리 실제 브라우저에서 돌아가기 때문에
+라우팅, 리다이렉트, localStorage 같은 브라우저 기능까지 포함해서 검증할 수 있다.
+대신 느리고 비용이 크기 때문에 핵심 플로우만 최소로 유지했다.
+
+> ### E2E에서 API Mock — page.route()
+
+E2E는 실제 앱을 띄우는 거라서 jest.mock 같은 함수 레벨 목킹이 안 된다.
+대신 Playwright의 `page.route()`로 네트워크 요청을 가로채서 가짜 응답을 돌려줬다.
+
+```typescript
+// API_BASE: 실제 API 서버 주소. 앱이 이 주소로 요청을 보내기 때문에 같은 URL 패턴으로 가로챈다
+await page.route(`${API_BASE}/**/auths/signin`, async (route) => {
+  if (route.request().method() === 'POST') {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ token: 'mock-jwt-token', user: mockUser }),
+    });
+  }
+});
+```
+
+실제 API 서버가 꺼져 있어도 테스트가 돌아간다.
+CI에서 외부 서비스 상태 때문에 테스트가 깨지면 곤란하니까 이 방식이 필요했다.
+
+인증이 필요한 테스트가 많아서 매번 로그인 Mock을 세팅하는 건 번거로웠다.
+그래서 Playwright의 fixture로 `authenticatedPage`를 만들어서
+API Mock과 localStorage 인증 상태가 미리 세팅된 페이지를 바로 쓸 수 있게 했다.
+
+```typescript
+// 인증이 필요한 테스트에서는 이렇게 쓴다
+test('마이페이지에서 탭을 전환할 수 있다', async ({
+  authenticatedPage: page,
+}) => {
+  await page.goto('/mypage');
+  await page.getByRole('tab', { name: '나의 리뷰' }).click();
+  // ...
+});
+```
+
+> ### CI에서 브랜치별 차등 실행
+
+E2E를 매번 3개 브라우저로 모두 돌리면 시간이 걸린다.
+`dev` 브랜치 PR에서는 Chromium + Mobile Chrome만 `main` 병합 전에는 WebKit까지 추가했다.
+
+```yaml
+- name: Run E2E tests (dev branch)
+  if: github.base_ref == 'dev'
+  run: pnpm e2e --project=chromium --project=mobile-chrome
+
+- name: Run E2E tests (main branch)
+  if: github.base_ref == 'main'
+  run: pnpm e2e
+```
+
+개발 중에는 ~2분 main 병합 전에는 ~3분 정도 걸린다.
+
+## 마치며
+
+솔직히 처음에는 테스트를 왜 써야 하는지 잘 몰랐다.
+기능 만들기도 바쁜데 테스트까지 쓰면 시간만 더 걸리는 거 아닌가 싶었다.
+
+그런데 막상 써보니까 테스트를 작성하는 시간보다
+테스트가 없어서 수동으로 확인하는 시간이 더 많았다는 걸 알게 됐다.
+한 번 만들어두면 코드를 고칠 때마다 알아서 확인해주니까 오히려 시간이 절약됐다.
+
+물론 아쉬운 점도 있다.
+TDD를 시도해보지 못한 것, 테스트를 프로젝트 초반이 아니라 중반부터 붙인 것...
+처음부터 테스트와 함께 개발했으면 설계도 달라졌을 것 같다.
+
+다음에는 처음부터 테스트를 같이 가져가보려고 한다.
+
+---
+
+### 참고 자료
+
+- [Kent C. Dodds — Write Tests. Not Too Many. Mostly Integration.](https://kentcdodds.com/blog/write-tests)
+- [Kent C. Dodds — Static vs Unit vs Integration vs E2E Tests](https://kentcdodds.com/blog/static-vs-unit-vs-integration-vs-e2e-tests)
+- [Kent C. Dodds — Testing Implementation Details](https://kentcdodds.com/blog/testing-implementation-details)
+- [Kent C. Dodds — Common Testing Mistakes](https://kentcdodds.com/blog/common-testing-mistakes#mistake-number-2-100-codecoverage)
+- [Kent C. Dodds — How to Know What to Test](https://kentcdodds.com/blog/how-to-know-what-to-test)
+- [Kent C. Dodds — The Testing Trophy and Testing Classifications](https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)
+- [Kent C. Dodds — Confidently Shipping Code](https://kentcdodds.com/blog/confidently-shipping-code)
+- [Jest 공식 문서](https://jestjs.io/docs/getting-started)
+- [React Testing Library 공식 문서](https://testing-library.com/docs/react-testing-library/intro)
+- [Playwright 공식 문서](https://playwright.dev/docs/intro)
