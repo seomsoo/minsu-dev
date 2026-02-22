@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { HomeLink } from '@/components/ui/HomeLink';
+import { ScrollToTop } from '@/components/ui/ScrollToTop';
 import { CategoryFilter } from '@/components/blog/CategoryFilter';
 import Link from 'next/link';
 
@@ -20,6 +21,7 @@ export default function BlogLayout({
         </div>
         {children}
       </div>
+      <ScrollToTop />
     </main>
   );
 }
