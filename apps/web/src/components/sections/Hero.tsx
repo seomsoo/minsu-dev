@@ -3,6 +3,7 @@
 import { m } from 'motion/react';
 import Link from 'next/link';
 import { HeroAscii } from '../ui/HeroAscii';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const Hero = () => {
   return (
@@ -26,7 +27,9 @@ export const Hero = () => {
           blog.
         </Link>
       </m.nav>
-
+      <div className="absolute top-5 right-3 z-20">
+        <ThemeToggle />
+      </div>
       <m.div className="relative z-10 flex h-full flex-col justify-between">
         <m.div
           initial={{ opacity: 0, x: -50 }}
