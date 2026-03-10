@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { HomeLink } from '@/components/ui/HomeLink';
+import { TopNav } from '@/components/ui/TopNav';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
 import { CategoryFilter } from '@/components/blog/CategoryFilter';
 import Link from 'next/link';
@@ -11,16 +11,19 @@ export default function BlogLayout({
 }) {
   return (
     <main className="bg-background min-h-screen">
-      <HomeLink />
+      <TopNav />
       <div className="mx-auto max-w-3xl px-6 py-5 font-mono">
         <div className="mb-2 flex items-baseline justify-between">
-          <Link href={'/blog'} className="text-xl font-bold">blog.</Link>
+          <Link href={'/blog'} className="text-xl font-bold">
+            blog.
+          </Link>
           <Suspense>
             <CategoryFilter />
           </Suspense>
         </div>
         {children}
       </div>
+
       <ScrollToTop />
     </main>
   );

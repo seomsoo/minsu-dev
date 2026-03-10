@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { HomeLink } from '@/components/ui/HomeLink';
+import { TopNav } from '@/components/ui/TopNav';
 import { Info } from '@/components/sections/Info';
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main className="bg-background min-h-screen">
-      <HomeLink />
+      <TopNav />
       <Info />
     </main>
   );

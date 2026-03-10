@@ -107,7 +107,7 @@ export const Info = () => {
               delay: 0.15 + index * 0.1,
               ease: 'easeOut',
             }}
-            className="border-border grid grid-cols-1 gap-4 border-b py-5 transition-colors hover:bg-black/2 md:py-6 lg:grid-cols-[1fr_2fr] lg:gap-0"
+            className="border-border grid grid-cols-1 gap-4 border-b py-5 transition-colors hover:bg-accent/5 md:py-6 lg:grid-cols-[1fr_2fr] lg:gap-0"
           >
             <div>
               <div className="flex items-center gap-2 font-semibold md:text-lg 2xl:text-xl">

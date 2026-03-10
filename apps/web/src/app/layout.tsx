@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { MotionProvider } from '@/components/MotionProvider';
 import { SITE_URL } from '@/lib/constants';
 import './globals.css';
@@ -103,7 +104,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#f5f5f5',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f5f5' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
+  ],
   width: 'device-width',
   initialScale: 1,
 };
@@ -117,9 +121,12 @@ export default function RootLayout({
     <html
       lang="ko"
       className={`${pretendard.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
     >
       <body className={`${pretendard.className} antialiased`}>
-        <MotionProvider>{children}</MotionProvider>
+        <ThemeProvider>
+          <MotionProvider>{children}</MotionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
