@@ -158,3 +158,7 @@ main {
   border-top: 1px solid var(--border);
   margin: 2em 0;
 }
+
+giscus-widget::part(iframe) {
+  min-height: 480px !important;
+}

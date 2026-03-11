@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getAllPosts, getPostBySlug } from '@/lib/blog';
 import { MDXContent } from '@/components/blog/MDXContent';
+import { Comments } from '@/components/blog/Comments';
 import { TableOfContents } from '@/components/blog/TableOfContents';
 
 interface PostPageProps {
@@ -61,6 +62,7 @@ export default async function PostPage({ params }: PostPageProps) {
           <MDXContent code={post.body} />
         </div>
       </article>
+      <Comments />
       <TableOfContents />
     </>
   );
