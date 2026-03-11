@@ -16,7 +16,9 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const posts = category ? getPostsByCategory(category) : getAllPosts();
 
   if (posts.length === 0) {
-    return <p className="text-text-secondary mt-8">아직 작성된 글이 없습니다.</p>;
+    return (
+      <p className="text-text-secondary mt-8">아직 작성된 글이 없습니다.</p>
+    );
   }
 
   return (
