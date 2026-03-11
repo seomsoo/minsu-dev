@@ -1,0 +1,13 @@
+main {
+  --color-canvas-default: oklch(0.97 0.008 90);
+  --color-canvas-subtle: oklch(0.94 0.006 90);
+  --color-border-default: oklch(0.82 0.01 90);
+  --color-border-muted: oklch(0.82 0.01 90);
+  --color-fg-default: oklch(0.15 0 0);
+  --color-fg-muted: oklch(0.45 0 0);
+  --color-accent-fg: oklch(0.45 0.12 260);
+  --color-accent-emphasis: oklch(0.45 0.12 260);
+  --color-btn-bg: oklch(0.94 0.006 90);
+  --color-btn-border: oklch(0.82 0.01 90);
+  --color-btn-hover-bg: oklch(0.90 0.008 90);
+}
