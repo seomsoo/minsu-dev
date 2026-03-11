@@ -41,7 +41,7 @@ export const ThemeToggle = () => {
   ];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-10">
       <button
         onClick={() => setOpen(!open)}
         className="text-text-secondary hover:text-text-primary cursor-pointer font-mono underline transition-colors"
