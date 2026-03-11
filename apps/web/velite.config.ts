@@ -1,5 +1,6 @@
 import { defineConfig, defineCollection, s } from 'velite';
 import rehypePrettyCode from 'rehype-pretty-code';
+import rehypeSlug from 'rehype-slug';
 
 const posts = defineCollection({
   name: 'Post',
@@ -28,6 +29,7 @@ export default defineConfig({
   collections: { posts },
   mdx: {
     rehypePlugins: [
+      rehypeSlug,
       [
         rehypePrettyCode,
         {

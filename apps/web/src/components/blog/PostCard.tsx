@@ -19,7 +19,7 @@ export const PostCard = ({ post }: PostCardProps) => {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group border-border block border-b py-5 transition-colors hover:bg-accent/5"
+      className="group border-border hover:bg-accent/5 block border-b px-2 py-5 transition-colors"
     >
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="font-semibold md:text-lg">{post.title}</h2>

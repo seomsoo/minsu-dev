@@ -1,19 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { Sun, Moon, Monitor } from 'lucide-react';
+import { useMounted } from '@/hooks/useMounted';
 
 export const ThemeToggle = () => {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const mounted = useMounted();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -41,7 +38,7 @@ export const ThemeToggle = () => {
   ];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-10">
       <button
         onClick={() => setOpen(!open)}
         className="text-text-secondary hover:text-text-primary cursor-pointer font-mono underline transition-colors"
