@@ -14,6 +14,7 @@ export const Comments = () => {
   return (
     <section className="border-border mt-16 border-t pt-8 pb-16">
       <Giscus
+        key={resolvedTheme}
         repo="seomsoo/minsu-dev"
         repoId="R_kgDOQwk_7Q"
         category="Comments"
@@ -23,7 +24,13 @@ export const Comments = () => {
         reactionsEnabled="1"
         emitMetadata="0"
         inputPosition="top"
-        theme={`${SITE_URL}/${resolvedTheme === 'dark' ? 'giscus-dark.css' : 'giscus-light.css'}`}
+        theme={
+          SITE_URL.includes('localhost')
+            ? resolvedTheme === 'dark'
+              ? 'transparent_dark'
+              : 'light'
+            : `${SITE_URL}/${resolvedTheme === 'dark' ? 'giscus-dark.css' : 'giscus-light.css'}`
+        }
         lang="ko"
       />
     </section>
