@@ -4,7 +4,7 @@ import { PostCard } from '@/components/blog/PostCard';
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: '프론트엔드 개발에 대한 기술 블로그',
+  description: '서민수 프론트엔드 기술 블로그',
 };
 
 interface BlogPageProps {
