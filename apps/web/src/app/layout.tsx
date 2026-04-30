@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { MotionProvider } from '@/components/MotionProvider';
 import { SITE_URL } from '@/lib/constants';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const pretendard = localFont({
@@ -100,6 +101,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: SITE_URL,
+    types: {
+      'application/rss+xml': `${SITE_URL}/blog/feed.xml`,
+    },
   },
 };
 
@@ -127,6 +131,7 @@ export default function RootLayout({
         <ThemeProvider>
           <MotionProvider>{children}</MotionProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

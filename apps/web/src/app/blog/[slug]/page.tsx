@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getAllPosts, getPostBySlug } from '@/lib/blog';
+import {
+  createBlogPostJsonLd,
+  createBlogPostMetadata,
+} from '@/lib/blog-metadata';
 import { MDXContent } from '@/components/blog/MDXContent';
 import { Comments } from '@/components/blog/Comments';
 import { TableOfContents } from '@/components/blog/TableOfContents';
@@ -21,16 +25,7 @@ export async function generateMetadata({
   const post = getPostBySlug(slug);
   if (!post) return {};
 
-  return {
-    title: post.title,
-    description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      type: 'article',
-      publishedTime: post.date,
-    },
-  };
+  return createBlogPostMetadata(post);
 }
 
 export default async function PostPage({ params }: PostPageProps) {
@@ -40,9 +35,15 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(createBlogPostJsonLd(post)),
+        }}
+      />
       <article className="py-5">
         <header className="mb-10">
-          <h2 className="text-2xl font-bold md:text-3xl">{post.title}</h2>
+          <h1 className="text-2xl font-bold md:text-3xl">{post.title}</h1>
           <div className="flex items-center justify-between">
             {post.tags.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
