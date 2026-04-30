@@ -14,30 +14,6 @@ export const HeroAscii = () => {
 
     let disposed = false;
 
-    // getContext has 5 overloaded signatures — simplified type for monkey-patch
-    type GetContextFn = (
-      this: HTMLCanvasElement,
-      contextId: string,
-      options?: object,
-    ) => RenderingContext | null;
-
-    const originalGetContext = HTMLCanvasElement.prototype
-      .getContext as GetContextFn;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (HTMLCanvasElement.prototype as any).getContext = function (
-      this: HTMLCanvasElement,
-      contextId: string,
-      options?: object,
-    ) {
-      if (contextId === '2d') {
-        return originalGetContext.call(this, contextId, {
-          ...(options as CanvasRenderingContext2DSettings),
-          willReadFrequently: true,
-        });
-      }
-      return originalGetContext.call(this, contextId, options);
-    };
-
     //  Scene & Camera
 
     const scene = new THREE.Scene();
@@ -258,8 +234,6 @@ export const HeroAscii = () => {
       if (mount.contains(effect.domElement)) {
         mount.removeChild(effect.domElement);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (HTMLCanvasElement.prototype as any).getContext = originalGetContext;
     };
   }, []);
 
