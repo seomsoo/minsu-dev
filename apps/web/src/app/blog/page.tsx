@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getAllPosts, getPostsByCategory } from '@/lib/blog';
+import { getPostsByMaybeCategory } from '@/lib/blog';
 import { PostCard } from '@/components/blog/PostCard';
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ interface BlogPageProps {
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const { category } = await searchParams;
-  const posts = category ? getPostsByCategory(category) : getAllPosts();
+  const posts = getPostsByMaybeCategory(category);
 
   if (posts.length === 0) {
     return (

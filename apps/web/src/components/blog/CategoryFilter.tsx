@@ -2,12 +2,9 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { BLOG_CATEGORIES } from '@/lib/blog-categories';
 
-const CATEGORIES = [
-  { label: 'all', value: '' },
-  { label: 'thoughts', value: 'thoughts' },
-  { label: 'dev', value: 'dev' },
-];
+const CATEGORIES = [{ label: 'all', value: '' }, ...BLOG_CATEGORIES];
 
 export const CategoryFilter = () => {
   const searchParams = useSearchParams();

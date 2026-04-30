@@ -2,6 +2,7 @@
 
 import { type ReactElement, useMemo } from 'react';
 import * as runtime from 'react/jsx-runtime';
+import { mdxComponents } from './mdx-components';
 
 interface MDXContentProps {
   code: string;
@@ -10,6 +11,8 @@ interface MDXContentProps {
 export const MDXContent = ({ code }: MDXContentProps) => {
   return useMemo(() => {
     const fn = new Function(code);
-    return fn({ ...runtime }).default({}) as ReactElement;
+    return fn({ ...runtime }).default({
+      components: mdxComponents,
+    }) as ReactElement;
   }, [code]);
 };

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { BlogCategory } from '@/lib/blog-categories';
 
 interface PostCardProps {
   post: {
@@ -6,6 +7,7 @@ interface PostCardProps {
     title: string;
     date: string;
     description: string;
+    category: BlogCategory;
   };
 }
 

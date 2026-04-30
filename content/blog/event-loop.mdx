@@ -1,0 +1,288 @@
+---
+title: 자바스크립트는 비동기를 어떻게 처리할까?
+slug: javascript-event-loop
+date: 2026-03-19
+description: 콜스택과 이벤트 루프의 동작 원리
+category: frontend
+tags:
+  - javascript
+  - event-loop
+  - call-stack
+  - microtask
+  - macrotask
+  - promise
+  - browser
+published: true
+---
+
+```javascript
+console.log('1');
+
+setTimeout(() => console.log('2'), 0);
+
+Promise.resolve().then(() => console.log('3'));
+
+queueMicrotask(() => console.log('4'));
+
+console.log('5');
+```
+
+출력 순서가 어떻게 될까?
+
+위에서부터 순서대로 `1 → 2 → 3 → 4 → 5`라고 생각할 수도 있다.
+`setTimeout`의 딜레이가 0ms니까 바로 실행될 것 같기도 하고
+
+정답은 `1 → 5 → 3 → 4 → 2`다.
+
+처음 이 결과를 봤을 때 솔직히 이해가 안 됐다.
+`setTimeout(0)`인데 왜 마지막에 실행되는 건지,
+`Promise.then`은 왜 `setTimeout`보다 먼저인지.
+
+이걸 이해하려면 자바스크립트가 코드를 어떻게 실행하는지 그 내부 구조를 알아야 한다.
+
+## 자바스크립트는 싱글 스레드다
+
+자바스크립트는 **싱글 스레드(Single Thread)** 언어다.
+스레드가 하나라는 건 한 번에 하나의 작업만 처리할 수 있다는 뜻이다.
+
+다른 언어는 멀티 스레드를 지원해서 여러 작업을 동시에 처리할 수 있지만
+자바스크립트는 코드가 위에서 아래로 한 줄씩 실행된다.
+
+그런데 웹에서 하는 행동을 생각해보면 좀 이상하다.
+API를 호출하면서 동시에 화면 스크롤도 되고 애니메이션도 돌아간다.
+싱글 스레드인데 어떻게 가능한 걸까?
+
+이걸 가능하게 해주는 구조가 **이벤트 루프(Event Loop)** 다.
+
+이벤트 루프를 이해하려면 먼저 **콜스택(Call Stack)** 부터 알아야 한다.
+
+## 콜스택
+
+콜스택은 자바스크립트 엔진이 현재 실행 중인 함수를 추적하는 자료구조다.
+이름 그대로 스택(Stack) 구조라서 나중에 들어온 게 먼저 나간다. LIFO(Last In, First Out).
+
+간단한 예시로 살펴보자.
+
+```javascript
+function first() {
+  second();
+  console.log('first');
+}
+
+function second() {
+  console.log('second');
+}
+
+first();
+```
+
+이 코드가 실행되면 콜스택에서는 이런 일이 벌어진다.
+
+1. `first()`가 호출되면서 콜스택에 올라간다
+2. `first()` 안에서 `second()`를 호출하니까 `second()`가 그 위에 쌓인다
+3. `second()` 안의 `console.log('second')`가 실행되고 `second()`가 스택에서 빠진다
+4. 다시 `first()`로 돌아와서 `console.log('first')`가 실행되고 `first()`도 빠진다
+
+함수가 호출되면 스택에 쌓이고(push) 실행이 끝나면 빠진다(pop).
+자바스크립트 엔진은 항상 스택의 맨 위에 있는 함수를 실행한다.
+
+여기서 중요한 게 하나 있다.
+콜스택에 함수가 남아 있는 동안에는 **다른 어떤 작업도 실행되지 않는다.**
+화면 렌더링도 클릭 이벤트 처리도 전부 콜스택이 비어야 시작된다.
+
+그래서 콜스택에서 오래 걸리는 작업을 실행하면 화면이 멈춘다.
+흔히 말하는 "브라우저가 멈췄다"가 바로 이 상황이다.
+
+## 비동기와 Web API
+
+만약 모든 작업을 콜스택에서 순서대로 처리한다면
+서버에서 데이터를 가져오는 동안 화면이 완전히 멈춰버린다.
+버튼을 클릭해도 스크롤을 해도 아무 반응이 없다.
+
+그래서 오래 걸리는 작업은 콜스택 밖으로 보내서 처리하는데
+이걸 **비동기(Asynchronous)** 처리라고 한다.
+
+`setTimeout`이나 `fetch` 같은 비동기 작업은
+자바스크립트 엔진이 직접 처리하지 않는다.
+**브라우저가 제공하는 Web API**가 대신 처리해준다.
+
+`setTimeout(() => console.log('2'), 0)`을 예로 들면 흐름은 이렇다.
+
+1. 자바스크립트가 `setTimeout`을 만난다
+2. 이 작업을 브라우저의 Web API에 넘긴다
+3. 자바스크립트는 기다리지 않고 바로 다음 줄로 넘어간다
+4. Web API에서 타이머가 끝나면 콜백 함수를 **태스크 큐**에 넣는다
+5. 이벤트 루프가 콜스택이 비어 있을 때 태스크 큐에서 콜백을 꺼내서 실행한다
+
+그러니까 `setTimeout(0)`이라고 해서 0ms 후에 바로 실행되는 게 아니라
+**"콜스택이 비면 그때 실행해줘"**라는 의미에 더 가깝다.
+
+> ### 태스크 큐와 마이크로태스크 큐
+
+여기가 핵심이다.
+비동기 작업의 콜백이 대기하는 큐가 사실 **두 종류**가 있다.
+
+**태스크 큐(Task Queue, 매크로태스크 큐라고도 부른다)** 에 들어가는 것들은 이런 것들이다.
+
+- `setTimeout`과 `setInterval`의 콜백
+- DOM 이벤트 핸들러 (`click`, `scroll` 등)
+- `MessageChannel`
+
+**마이크로태스크 큐(Microtask Queue)** 에 들어가는 것들은 이렇다.
+
+- `Promise.then`, `Promise.catch`, `Promise.finally`의 콜백
+- `queueMicrotask()`
+- `MutationObserver`
+
+그리고 이 둘 사이에는 **우선순위 차이**가 있다.
+마이크로태스크 큐가 태스크 큐보다 항상 먼저 처리된다.
+
+이벤트 루프의 동작 순서를 정리하면 이렇다.
+
+1. 콜스택에 있는 코드를 전부 실행한다
+2. 콜스택이 비면 마이크로태스크 큐를 확인한다
+3. 마이크로태스크 큐에 있는 작업을 **전부** 실행한다 (큐가 빌 때까지)
+4. 마이크로태스크가 끝나면 브라우저가 렌더링이 필요한지 확인하고 필요하면 화면을 그린다
+5. 태스크 큐에서 작업을 **하나** 꺼내서 실행한다
+6. 다시 2번으로 돌아간다
+
+주목할 게 두 가지 있다.
+
+첫째로 마이크로태스크는 큐가 빌 때까지 전부 실행한다.
+마이크로태스크 안에서 또 마이크로태스크를 추가하면 그것도 이번 사이클에서 실행된다.
+그래서 마이크로태스크를 무한으로 추가하면 브라우저가 멈출 수 있다.
+
+둘째로 렌더링은 마이크로태스크 이후 태스크 큐를 처리하기 전에 일어난다.
+마이크로태스크에서 DOM을 변경하면 그 변경사항이 화면에 바로 반영될 수 있다.
+
+## 처음 코드를 다시 추적해 보자
+
+이제 처음 코드의 실행 순서를 한 줄씩 따라가 보자.
+
+```javascript
+console.log('1'); // (1) 동기 — 콜스택에서 즉시 실행
+
+setTimeout(() => {
+  // (2) Web API에 넘김 → 태스크 큐에 대기
+  console.log('2');
+}, 0);
+
+Promise.resolve().then(() => {
+  // (3) 마이크로태스크 큐에 대기
+  console.log('3');
+});
+
+queueMicrotask(() => {
+  // (4) 마이크로태스크 큐에 대기
+  console.log('4');
+});
+
+console.log('5'); // (5) 동기 — 콜스택에서 즉시 실행
+```
+
+아래에서 단계별로 콜스택과 큐의 상태 변화를 직접 확인할 수 있다.
+
+<EventLoopStepper />
+
+글로 읽는 것보다 직접 눈으로 보면 이해가 훨씬 빠르다.
+[JavaScript Visualizer 9000](https://www.jsv9000.app/)에서 위 코드를 넣고 실행해보면
+콜스택과 큐의 상태가 단계별로 어떻게 바뀌는지 시각적으로 확인할 수 있다.
+
+## 좀 더 복잡한 문제
+
+이해가 됐다면 이 코드의 출력 순서도 한번 예측해 보자.
+
+```javascript
+console.log('start');
+
+setTimeout(() => {
+  console.log('timeout 1');
+  Promise.resolve().then(() => console.log('promise inside timeout'));
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log('promise 1');
+  setTimeout(() => console.log('timeout inside promise'), 0);
+});
+
+setTimeout(() => console.log('timeout 2'), 0);
+
+console.log('end');
+```
+
+직접 생각해보고 아래 정답을 확인해 보자.
+
+```
+start
+end
+promise 1
+timeout 1
+promise inside timeout
+timeout 2
+timeout inside promise
+```
+
+핵심은 **매 태스크가 끝날 때마다 마이크로태스크 큐를 전부 비운다**는 점이다.
+
+`timeout 1`이 실행된 직후 그 안에서 등록한 `promise inside timeout`이
+바로 다음에 실행되는 이유가 이거다.
+태스크 하나가 끝나면 마이크로태스크 큐를 전부 비우고 그다음 태스크로 넘어간다.
+
+> ### 왜 큐를 두 개로 나눴을까
+
+한 가지 의문이 생길 수 있다.
+그냥 큐 하나에서 순서대로 처리하면 더 간단하지 않을까?
+
+마이크로태스크가 존재하는 이유는
+**현재 실행 중인 작업의 후속 처리를 바로 하기 위해서**다.
+
+`fetch`로 데이터를 받아온 다음 `.then()`에서 상태를 업데이트하고
+그 상태로 DOM을 변경한다고 해보자.
+이 과정이 중간에 다른 태스크에 끼어들면
+사용자가 아직 업데이트되지 않은 화면을 보게 될 수 있다.
+
+마이크로태스크는 현재 태스크가 끝난 직후
+다른 태스크가 끼어들기 전에 바로 실행되기 때문에
+이런 연속적인 비동기 흐름의 일관성을 보장해준다.
+
+HTML 스펙에서도 이벤트 루프의 동작을 명시하고 있는데
+마이크로태스크 체크포인트를 태스크 사이마다 수행하도록 정의하고 있다.
+궁금하면 [HTML 스펙 - Event Loop Processing Model](https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model)에서 직접 확인할 수 있다.
+
+> ### 이벤트 루프와 렌더링
+
+브라우저의 화면 렌더링도 이벤트 루프와 연결되어 있다.
+
+이벤트 루프 순서에서 마이크로태스크 다음 태스크 큐를 처리하기 전에
+"렌더링이 필요하면 렌더링한다"고 했는데
+이게 매 사이클마다 렌더링한다는 뜻은 아니다.
+
+브라우저는 보통 60fps(초당 60프레임)를 목표로 한다.
+약 16.6ms마다 한 번 렌더링할 기회를 가지고
+이벤트 루프가 돌 때마다 "지금 렌더링할 타이밍인가?"를 확인한 뒤
+타이밍이 맞으면 렌더링을 수행한다.
+
+그래서 콜스택이나 마이크로태스크에서 오래 걸리는 작업을 실행하면
+렌더링이 밀리면서 화면이 버벅이거나 멈추는 것처럼 보이는 거다.
+
+## 정리
+
+- 자바스크립트는 싱글 스레드다. 콜스택 하나에서 한 번에 하나의 작업만 처리한다.
+- 오래 걸리는 작업은 Web API에 넘기고 완료된 콜백은 큐에서 대기한다.
+- 큐는 두 종류다. 마이크로태스크 큐(Promise, queueMicrotask)와 태스크 큐(setTimeout, 이벤트).
+- 이벤트 루프는 콜스택이 비면 마이크로태스크를 전부 처리하고 그다음 태스크를 하나 처리한다.
+- `setTimeout(0)`은 "0ms 후 바로 실행"이 아니라 "콜스택과 마이크로태스크가 비면 그때 실행"이다.
+
+다음 글에서는 콜스택에 올라가는 것이 단순히 함수가 아니라
+**실행 컨텍스트(Execution Context)** 라는 것을 다룬다.
+실행 컨텍스트를 이해하면 스코프와 호이스팅 그리고 클로저까지 자연스럽게 연결된다.
+
+---
+
+### 참고 자료
+
+- [MDN - Event Loop](https://developer.mozilla.org/ko/docs/Web/JavaScript/Event_loop)
+- [HTML Spec - Event Loop Processing Model](https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model)
+- [MDN - queueMicrotask](https://developer.mozilla.org/ko/docs/Web/API/Window/queueMicrotask)
+- [MDN - setTimeout](https://developer.mozilla.org/ko/docs/Web/API/Window/setTimeout)
+- [JavaScript Visualizer 9000](https://www.jsv9000.app/)

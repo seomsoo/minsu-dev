@@ -1,6 +1,7 @@
 import { defineConfig, defineCollection, s } from 'velite';
 import rehypePrettyCode from 'rehype-pretty-code';
 import rehypeSlug from 'rehype-slug';
+import { BLOG_CATEGORY_VALUES } from './src/lib/blog-categories';
 
 const posts = defineCollection({
   name: 'Post',
@@ -10,7 +11,7 @@ const posts = defineCollection({
     slug: s.slug('posts'),
     date: s.isodate(),
     description: s.string().max(300),
-    category: s.enum(['thoughts', 'dev']),
+    category: s.enum(BLOG_CATEGORY_VALUES),
     tags: s.array(s.string()).default([]),
     published: s.boolean().default(true),
     body: s.mdx(),
