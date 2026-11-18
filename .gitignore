@@ -50,3 +50,8 @@ CLAUDE.md
 
 # Codex
 AGENTS.md
+.agents/
+
+# 개인 문서·백업
+docs/
+*.bak
