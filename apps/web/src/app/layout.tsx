@@ -4,14 +4,10 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { MotionProvider } from '@/components/MotionProvider';
 import { SITE_URL } from '@/lib/constants';
 import { Analytics } from '@vercel/analytics/next';
+// Pretendard는 한글 전체가 2MB라, 글자 묶음 92조각으로 나눈 버전을 쓴다.
+// 브라우저가 페이지에 실제로 나온 글자가 든 조각만 받는다 (unicode-range)
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './globals.css';
-
-const pretendard = localFont({
-  src: '../../public/fonts/PretendardVariable.woff2',
-  display: 'swap',
-  weight: '45 920',
-  variable: '--font-pretendard',
-});
 
 const jetbrainsMono = localFont({
   src: [
@@ -122,12 +118,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${pretendard.variable} ${jetbrainsMono.variable}`}
-      suppressHydrationWarning
-    >
-      <body className={`${pretendard.className} antialiased`}>
+    <html lang="ko" className={jetbrainsMono.variable} suppressHydrationWarning>
+      <body className="antialiased">
         <ThemeProvider>
           <MotionProvider>{children}</MotionProvider>
         </ThemeProvider>

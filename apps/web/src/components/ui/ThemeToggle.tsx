@@ -1,71 +1,49 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { Sun, Moon, Monitor } from 'lucide-react';
 import { useMounted } from '@/hooks/useMounted';
+import { QUEEN } from '@/lib/piece-paths';
 
+const ICON_SIZE = 'block size-6 2xl:size-[max(24px,1.3vw)]';
+
+/** 라이트는 윤곽선만 있는 흰 퀸, 다크는 속이 찬 검은 퀸 */
+function Queen({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      // 퀸은 실제 말 비율이라 폭이 좁다. 큰 화면(4K 등)에서는 화면 폭을 따라 커진다
+      className={ICON_SIZE}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth={filled ? 0 : 1.5}
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d={QUEEN} />
+    </svg>
+  );
+}
+
+/**
+ * 퀸 하나로 켜고 끈다.
+ * 처음 온 사람은 기기 설정(system)을 따르고, 누르면 지금 보이는 것의 반대로 바뀌어 기억된다.
+ */
 export const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
+  const { resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
 
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+  // 서버에서는 기기 설정을 모르므로 자리만 잡아 두고, 그린 뒤에 아이콘을 보인다
+  if (!mounted) return <span className={ICON_SIZE} aria-hidden />;
 
-  if (!mounted) return null;
-  const currentIcon =
-    {
-      light: Sun,
-      dark: Moon,
-      system: Monitor,
-    }[theme ?? 'system'] ?? Monitor;
-  const Icon = currentIcon;
-
-  const options = [
-    { value: 'light', label: 'light', icon: Sun },
-    { value: 'dark', label: 'dark', icon: Moon },
-    { value: 'system', label: 'system', icon: Monitor },
-  ];
-
+  const dark = resolvedTheme === 'dark';
   return (
-    <div ref={ref} className="relative z-10">
-      <button
-        onClick={() => setOpen(!open)}
-        className="text-text-secondary hover:text-text-primary cursor-pointer font-mono underline transition-colors"
-      >
-        <Icon size={24} />
-      </button>
-      {open && (
-        <div className="border-border bg-background absolute top-full right-0 mt-2 flex flex-col rounded-md border py-1 shadow-sm">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => {
-                setTheme(opt.value);
-                setOpen(false);
-              }}
-              className={`flex cursor-pointer items-center gap-2 px-4 py-1.5 text-left font-mono text-sm transition-colors ${
-                theme === opt.value
-                  ? 'text-text-primary'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <opt.icon size={14} />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      aria-label={dark ? '라이트 모드로 바꾸기' : '다크 모드로 바꾸기'}
+      className="text-text-secondary hover:text-text-primary block cursor-pointer transition-colors"
+    >
+      <Queen filled={dark} />
+    </button>
   );
 };

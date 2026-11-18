@@ -17,8 +17,9 @@
   --color-text-secondary: var(--text-secondary);
   --color-accent: var(--accent);
   --color-border: var(--border);
+  --color-link: var(--link);
   --font-sans:
-    var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui,
+    'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui,
     sans-serif;
   --font-mono: var(--font-jetbrains), monospace;
 }
@@ -161,4 +162,11 @@ main {
 
 giscus-widget::part(iframe) {
   min-height: 480px !important;
+}
+
+/* 시리즈 상자의 폰 분해도: 벌어져 있던 부품이 처음 한 번 조립된다 (--lift는 부품마다 다르다) */
+@keyframes pawn-assemble {
+  from {
+    translate: 0 var(--lift);
+  }
 }
