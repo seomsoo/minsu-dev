@@ -87,8 +87,7 @@ export const TableOfContents = () => {
 
   if (items.length === 0) return null;
 
-  const isHighlighted = (id: string) =>
-    visibleIds.has(id) || activeId === id;
+  const isHighlighted = (id: string) => visibleIds.has(id) || activeId === id;
 
   return (
     <nav
@@ -111,7 +110,9 @@ export const TableOfContents = () => {
                 });
               }}
               className={`block border-l-2 py-1 pl-3 font-mono text-[0.8125rem] transition-colors ${
-                activeId === item.id ? 'border-text-primary' : 'border-transparent'
+                activeId === item.id
+                  ? 'border-text-primary'
+                  : 'border-transparent'
               } ${
                 isHighlighted(item.id)
                   ? 'text-text-primary'

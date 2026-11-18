@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getAllPosts } from '@/lib/blog';
+import { WHY_SERIES } from '@/lib/blog-series';
 import { SITE_URL } from '@/lib/constants';
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -30,6 +31,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}${WHY_SERIES.href}`,
+      changeFrequency: 'weekly',
+      priority: 0.7,
     },
     ...blogEntries,
   ];

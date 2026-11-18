@@ -1,5 +1,9 @@
 import { getAllPosts } from '@/lib/blog';
+import { getBlogCategoryLabel } from '@/lib/blog-categories';
 import { SITE_URL } from '@/lib/constants';
+
+const CACHE_CONTROL =
+  'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400';
 
 export async function GET() {
   const posts = getAllPosts();
@@ -13,7 +17,7 @@ export async function GET() {
       <description>${escapeXml(post.description)}</description>
       <pubDate>${new Date(post.date).toUTCString()}</pubDate>
       <guid>${SITE_URL}/blog/${post.slug}</guid>
-      <category>${post.category}</category>
+      <category>${escapeXml(getBlogCategoryLabel(post.category))}</category>
     </item>`,
     )
     .join('');
@@ -33,7 +37,8 @@ export async function GET() {
 
   return new Response(feed, {
     headers: {
-      'Content-Type': 'application/xml',
+      'Content-Type': 'application/rss+xml; charset=utf-8',
+      'Cache-Control': CACHE_CONTROL,
     },
   });
 }
