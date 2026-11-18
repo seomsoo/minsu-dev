@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
-import { getPostsByMaybeCategory } from '@/lib/blog';
+import { WHY_SERIES } from '@/lib/blog-series';
+import { getPostsByMaybeCategory, getSeriesPosts } from '@/lib/blog';
 import { PostCard } from '@/components/blog/PostCard';
+import { SeriesCard } from '@/components/blog/SeriesCard';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -15,17 +17,18 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const { category } = await searchParams;
   const posts = getPostsByMaybeCategory(category);
 
-  if (posts.length === 0) {
-    return (
-      <p className="text-text-secondary mt-8">아직 작성된 글이 없습니다.</p>
-    );
-  }
+  const seriesPosts = getSeriesPosts(WHY_SERIES.id);
 
   return (
     <div className="flex flex-col">
-      {posts.map((post) => (
-        <PostCard key={post.slug} post={post} />
-      ))}
+      {(!category || category === 'frontend') && seriesPosts.length > 0 && (
+        <SeriesCard href={WHY_SERIES.href} title={WHY_SERIES.title} />
+      )}
+      {posts.length === 0 ? (
+        <p className="text-text-secondary">아직 작성된 글이 없습니다.</p>
+      ) : (
+        posts.map((post) => <PostCard key={post.slug} post={post} />)
+      )}
     </div>
   );
 }
